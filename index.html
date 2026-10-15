@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratorio de Prototipado Embebido</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: hoja de plano técnico (blueprint) — encabezado de laboratorio, barra de fases y una "mesa de trabajo" por ronda */
+:root{
+  --paper:#EEF3F6; --grid:rgba(40,80,110,.08); --panel:#FFFFFF; --panel-2:#F6F9FB;
+  --ink:#16232F; --muted:#5A6B7A; --line:#C9D5DE;
+  --hw:#D2611B; --hw-soft:rgba(210,97,27,.12);
+  --fw:#13899A; --fw-soft:rgba(19,137,154,.12);
+  --sw:#46597A; --sw-soft:rgba(70,89,122,.12);
+  --ok:#23864D; --ok-soft:rgba(35,134,77,.12);
+  --bad:#C23B3B; --bad-soft:rgba(194,59,59,.12);
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1821; --grid:rgba(120,170,210,.07); --panel:#15222E; --panel-2:#192836;
+  --ink:#E4ECF2; --muted:#93A6B6; --line:#2B3E4E;
+  --hw:#F08A45; --hw-soft:rgba(240,138,69,.16);
+  --fw:#3EC1D3; --fw-soft:rgba(62,193,211,.15);
+  --sw:#9DB1D4; --sw-soft:rgba(157,177,212,.15);
+  --ok:#4CC27D; --ok-soft:rgba(76,194,125,.15);
+  --bad:#F06B6B; --bad-soft:rgba(240,107,107,.15);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0E1821; --grid:rgba(120,170,210,.07); --panel:#15222E; --panel-2:#192836;
+  --ink:#E4ECF2; --muted:#93A6B6; --line:#2B3E4E;
+  --hw:#F08A45; --hw-soft:rgba(240,138,69,.16);
+  --fw:#3EC1D3; --fw-soft:rgba(62,193,211,.15);
+  --sw:#9DB1D4; --sw-soft:rgba(157,177,212,.15);
+  --ok:#4CC27D; --ok-soft:rgba(76,194,125,.15);
+  --bad:#F06B6B; --bad-soft:rgba(240,107,107,.15);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:28px 48px;
+}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:.01em}
+.mono{font-family:var(--f-mono)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--fw);outline-offset:2px}
+
+/* Encabezado tipo cajetín de plano */
+.titleblock{border:1.5px solid var(--ink);background:var(--panel);display:grid;grid-template-columns:1fr auto}
+.titleblock .main{padding:18px 22px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.titleblock h1{font-size:clamp(26px,4.4vw,40px);line-height:1.05}
+.titleblock h1 span{color:var(--hw)}
+.titleblock .meta{border-left:1.5px solid var(--ink);display:grid;grid-template-rows:repeat(3,auto);font-family:var(--f-mono);font-size:12px;min-width:180px}
+.titleblock .meta div{padding:8px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column}
+.titleblock .meta div:last-child{border-bottom:0}
+.titleblock .meta b{font-weight:600;font-size:13px;color:var(--ink)}
+.titleblock .meta small{color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:10.5px}
+@media (max-width:640px){.titleblock{grid-template-columns:1fr}.titleblock .meta{border-left:0;border-top:1.5px solid var(--ink);grid-template-columns:repeat(3,1fr);grid-template-rows:auto;min-width:0}.titleblock .meta div{border-bottom:0;border-right:1px solid var(--line)}.titleblock .meta div:last-child{border-right:0}}
+
+/* Barra de estado */
+.status{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.phases{display:flex;gap:6px;flex-wrap:wrap}
+.phase{font-family:var(--f-mono);font-size:12px;padding:6px 10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);display:flex;gap:6px;align-items:center}
+.phase .n{display:inline-grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;font-size:11px}
+.phase.active{border-color:var(--ink);color:var(--ink);font-weight:600}
+.phase.done{color:var(--ok);border-color:var(--ok)}
+.counters{display:flex;gap:8px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.counter{padding:6px 12px;border:1px solid var(--line);background:var(--panel);display:flex;gap:6px;align-items:center}
+.counter b{font-weight:600}
+.counter.ok b{color:var(--ok)} .counter.bad b{color:var(--bad)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.counter.ok .dot{background:var(--ok)} .counter.bad .dot{background:var(--bad)}
+
+/* Paneles */
+.bench{background:var(--panel);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:18px}
+.bench-head{display:flex;flex-direction:column;gap:6px;max-width:68ch}
+.bench-head h2{font-size:24px}
+.bench-head p{margin:0;color:var(--muted)}
+.how{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);border-left:3px solid var(--fw);padding:4px 10px;background:var(--panel-2)}
+
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:10px 18px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;cursor:pointer;transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Intro */
+.intro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.intro-card{border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--panel-2)}
+.intro-card .k{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.intro-card h3{font-size:17px}
+.intro-card p{margin:0;font-size:14px;color:var(--muted)}
+@media (max-width:720px){.intro-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px;max-width:360px}
+.field label{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field input{padding:10px 12px;border:1.5px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit}
+.field input:focus{border-color:var(--fw);outline:none}
+
+/* Ronda 1: capas */
+.tray{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;padding:12px;border:1px dashed var(--line);background:var(--panel-2)}
+.chip{border:1.5px solid var(--line);background:var(--panel);padding:8px 12px;cursor:grab;font-size:14px;font-weight:500;user-select:none;touch-action:manipulation;transition:border-color .12s,transform .12s,box-shadow .12s}
+.chip:hover{border-color:var(--ink)}
+.chip.selected{border-color:var(--fw);box-shadow:0 0 0 3px var(--fw-soft);transform:translateY(-2px)}
+.chip.dragging{opacity:.4}
+.stack{display:flex;flex-direction:column;gap:10px}
+.layer{border:1.5px solid var(--c);background:var(--panel);display:grid;grid-template-columns:200px 1fr;min-height:84px;cursor:pointer;transition:background .15s}
+.layer.over,.layer.armed:hover{background:var(--soft)}
+.layer .lbl{background:var(--soft);border-right:1.5px solid var(--c);padding:12px 14px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.layer .lbl h3{font-size:17px;color:var(--c)}
+.layer .lbl small{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.layer .slot{padding:10px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;min-width:0}
+.layer .slot .placed{font-size:13px;padding:5px 9px;border:1px solid var(--c);color:var(--ink);background:var(--soft);font-weight:500}
+.layer[data-k="sw"]{--c:var(--sw);--soft:var(--sw-soft)}
+.layer[data-k="fw"]{--c:var(--fw);--soft:var(--fw-soft)}
+.layer[data-k="hw"]{--c:var(--hw);--soft:var(--hw-soft)}
+@media (max-width:640px){.layer{grid-template-columns:1fr}.layer .lbl{border-right:0;border-bottom:1.5px solid var(--c)}}
+
+.shake{animation:shake .38s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.flash-bad{background:var(--bad-soft)!important;border-color:var(--bad)!important}
+.flash-ok{background:var(--ok-soft)!important}
+
+.feedback{min-height:44px;padding:10px 14px;border:1px solid var(--line);background:var(--panel-2);font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.feedback .tag{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.08em;padding:2px 6px;border:1px solid currentColor;flex:none;margin-top:1px}
+.feedback.ok{border-color:var(--ok);background:var(--ok-soft)} .feedback.ok .tag{color:var(--ok)}
+.feedback.bad{border-color:var(--bad);background:var(--bad-soft)} .feedback.bad .tag{color:var(--bad)}
+.feedback.info .tag{color:var(--muted)}
+
+/* Ronda 2: proceso */
+.track{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.slot2{border:1.5px dashed var(--line);min-height:96px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;background:var(--panel-2)}
+.slot2 .num{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.slot2.next{border-color:var(--fw);border-style:solid;box-shadow:inset 0 0 0 1px var(--fw)}
+.slot2.filled{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.slot2.filled .num{color:var(--ok);font-weight:600}
+.slot2 b{font-family:var(--f-display);font-size:14px;line-height:1.2}
+.slot2 span{font-size:12px;color:var(--muted);line-height:1.3}
+.slot2.loop{border-color:var(--hw)}
+@media (max-width:820px){.track{grid-template-columns:repeat(2,1fr)}}
+.pile{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.step{border:1.5px solid var(--line);background:var(--panel);padding:10px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .12s,transform .12s}
+.step:hover{border-color:var(--ink);transform:translateY(-1px)}
+.step b{font-family:var(--f-display);font-size:15px}
+.step span{font-size:13px;color:var(--muted)}
+.step.gone{visibility:hidden}
+
+/* Ronda 3: quiz */
+.q-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.q-tag{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.progress{flex:1;min-width:120px;height:6px;background:var(--panel-2);border:1px solid var(--line);position:relative}
+.progress i{position:absolute;inset:0 auto 0 0;background:var(--fw);transition:width .3s}
+.scenario{font-size:clamp(18px,2.4vw,22px);font-family:var(--f-display);font-weight:600;line-height:1.3;max-width:60ch;margin:0}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{border:1.5px solid var(--line);background:var(--panel);padding:12px 14px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:center;font-size:15px;transition:border-color .12s}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt .key{font-family:var(--f-mono);font-size:12px;width:24px;height:24px;display:inline-grid;place-items:center;border:1px solid var(--line);flex:none}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+
+/* Final */
+.result{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+@media (max-width:640px){.result{grid-template-columns:1fr}}
+.gauge{width:170px;height:170px;position:relative}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge .val{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:40px;font-weight:700}
+.gauge .val small{display:block;font-size:12px;font-family:var(--f-mono);color:var(--muted);font-weight:400;text-align:center}
+.breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.breakdown div{border:1px solid var(--line);padding:10px 12px;background:var(--panel-2);display:flex;flex-direction:column;gap:2px}
+.breakdown small{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.breakdown b{font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums}
+@media (max-width:520px){.breakdown{grid-template-columns:1fr}}
+.verdict{font-family:var(--f-display);font-size:24px}
+.stamp{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+footer{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);text-align:center}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="titleblock">
+    <div class="main">
+      <div class="eyebrow">Software Embebido · Tema 4.1</div>
+      <h1>Laboratorio de <span>Prototipado</span> Embebido</h1>
+    </div>
+    <div class="meta">
+      <div><small>Plano</small><b>PRT-4.1</b></div>
+      <div><small>Fases</small><b>3 rondas</b></div>
+      <div><small>Operador</small><b id="opName">—</b></div>
+    </div>
+  </header>
+
+  <div class="status">
+    <div class="phases" id="phases">
+      <div class="phase" data-p="1"><span class="n">1</span>Capas</div>
+      <div class="phase" data-p="2"><span class="n">2</span>Proceso</div>
+      <div class="phase" data-p="3"><span class="n">3</span>Diagnóstico</div>
+    </div>
+    <div class="counters">
+      <div class="counter ok"><span class="dot"></span>Aciertos <b id="cOk">0</b></div>
+      <div class="counter bad"><span class="dot"></span>Fallos <b id="cBad">0</b></div>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <section class="bench" id="sIntro">
+    <div class="bench-head">
+      <h2>Arma un prototipo sin quemar ninguna placa</h2>
+      <p>Tres rondas cortas sobre lo que vimos en la exposición. Cada error suma un fallo, pero puedes volver a intentarlo hasta acertar. Al final verás tu precisión.</p>
+    </div>
+    <div class="intro-grid">
+      <div class="intro-card"><span class="k">Ronda 1</span><h3>Capas del prototipo</h3><p>Coloca cada pieza en Hardware, Firmware o Software de aplicación.</p></div>
+      <div class="intro-card"><span class="k">Ronda 2</span><h3>Proceso de desarrollo</h3><p>Ordena las 10 fases, de la idea al paquete listo para preproducción.</p></div>
+      <div class="intro-card"><span class="k">Ronda 3</span><h3>Diagnóstico en el banco</h3><p>Situaciones reales: elige la interfaz, el tipo de prototipo o la herramienta correcta.</p></div>
+    </div>
+    <div class="field">
+      <label for="nameInput">Tu nombre (aparece en el resultado)</label>
+      <input id="nameInput" type="text" maxlength="40" placeholder="Ej. Ana López" autocomplete="name">
+    </div>
+    <div class="row"><button class="btn" id="startBtn">Encender el banco de pruebas</button></div>
+  </section>
+
+  <!-- RONDA 1 -->
+  <section class="bench" id="sR1" hidden>
+    <div class="bench-head">
+      <span class="eyebrow">Ronda 1 de 3</span>
+      <h2>¿En qué capa va cada pieza?</h2>
+      <p>Un prototipo embebido junta tres capas que trabajan juntas. Ubica cada pieza en la suya.</p>
+      <div class="how">Toca una tarjeta y luego la capa. En computadora también puedes arrastrarla.</div>
+    </div>
+    <div class="tray" id="tray"></div>
+    <div class="stack">
+      <div class="layer" data-k="sw"><div class="lbl"><h3>Software de aplicación</h3><small>lógica · decisiones · nube</small></div><div class="slot"></div></div>
+      <div class="layer" data-k="fw"><div class="lbl"><h3>Firmware</h3><small>bajo nivel · periféricos</small></div><div class="slot"></div></div>
+      <div class="layer" data-k="hw"><div class="lbl"><h3>Hardware</h3><small>el núcleo físico</small></div><div class="slot"></div></div>
+    </div>
+    <div class="feedback info" id="fb1"><span class="tag">INFO</span><span>Quedan <b id="left1">12</b> piezas por colocar.</span></div>
+    <div class="row"><button class="btn" id="next1" disabled>Pasar a la Ronda 2</button></div>
+  </section>
+
+  <!-- RONDA 2 -->
+  <section class="bench" id="sR2" hidden>
+    <div class="bench-head">
+      <span class="eyebrow">Ronda 2 de 3</span>
+      <h2>Ordena el proceso de desarrollo</h2>
+      <p>Las primeras 4 fases son de diseño; las siguientes 6 son de construcción y validación. Ojo: las fases 8 y 9 forman un ciclo de iteración.</p>
+      <div class="how">Toca las fases en orden, empezando por la número 1.</div>
+    </div>
+    <div class="track" id="track"></div>
+    <div class="pile" id="pile"></div>
+    <div class="feedback info" id="fb2"><span class="tag">INFO</span><span>¿Cuál es la fase 1?</span></div>
+    <div class="row"><button class="btn" id="next2" disabled>Pasar a la Ronda 3</button></div>
+  </section>
+
+  <!-- RONDA 3 -->
+  <section class="bench" id="sR3" hidden>
+    <div class="bench-head">
+      <span class="eyebrow">Ronda 3 de 3</span>
+      <h2>Diagnóstico en el banco de pruebas</h2>
+    </div>
+    <div class="q-meta">
+      <span class="q-tag" id="qTag">Interfaces</span>
+      <div class="progress"><i id="qBar" style="width:0%"></i></div>
+      <span class="mono" id="qCount" style="font-size:13px">1 / 8</span>
+    </div>
+    <p class="scenario" id="qText"></p>
+    <div class="opts" id="qOpts"></div>
+    <div class="feedback info" id="fb3"><span class="tag">INFO</span><span>Elige una opción.</span></div>
+    <div class="row"><button class="btn" id="next3" disabled>Siguiente</button></div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="bench" id="sEnd" hidden>
+    <div class="result">
+      <div class="gauge">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--line)" stroke-width="9"/><circle id="gArc" cx="50" cy="50" r="42" fill="none" stroke="var(--ok)" stroke-width="9" stroke-dasharray="263.9" stroke-dashoffset="263.9" style="transition:stroke-dashoffset 1s ease"/></svg>
+        <div class="val"><div><span id="gVal">0%</span><small>precisión</small></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <span class="eyebrow">Reporte de validación</span>
+        <div class="verdict" id="verdict"></div>
+        <p style="margin:0;color:var(--muted)" id="verdictText"></p>
+        <div class="breakdown">
+          <div><small>Capas</small><b id="b1">—</b></div>
+          <div><small>Proceso</small><b id="b2">—</b></div>
+          <div><small>Diagnóstico</small><b id="b3">—</b></div>
+        </div>
+        <div class="stamp" id="stamp"></div>
+      </div>
+    </div>
+    <div class="how">Toma captura de esta pantalla si te piden evidencia de la actividad.</div>
+    <div class="row"><button class="btn" id="restart">Reiniciar actividad</button></div>
+  </section>
+
+  <footer>Software Embebido · UAEMex Centro Universitario Tianguistenco · Equipo: González Villela, Valdez Ordóñez, Pegueros Mendoza, Arias Domínguez, Rodríguez Flores</footer>
+</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  const PIECES = [
+    {t:"Microcontrolador", k:"hw", why:"El MCU es el chip físico: el corazón del hardware."},
+    {t:"Sensores y actuadores", k:"hw", why:"Son componentes físicos que miden o mueven cosas."},
+    {t:"Memoria externa", k:"hw", why:"Es un chip físico conectado a la placa."},
+    {t:"Circuito de alimentación", k:"hw", why:"Reguladores y baterías son parte física del sistema."},
+    {t:"Configurar relojes y GPIO", k:"fw", why:"Configurar pines y relojes es trabajo de bajo nivel: firmware."},
+    {t:"Gestionar interrupciones", k:"fw", why:"Las interrupciones se atienden en el firmware, cerca del hardware."},
+    {t:"Leer el ADC", k:"fw", why:"Leer el convertidor analógico-digital es un driver: firmware."},
+    {t:"Modo de bajo consumo (sleep)", k:"fw", why:"Dormir el micro para ahorrar energía lo controla el firmware."},
+    {t:"RTOS (FreeRTOS)", k:"fw", why:"El sistema operativo en tiempo real vive en la capa de firmware."},
+    {t:"Algoritmos y toma de decisiones", k:"sw", why:"La lógica principal del producto es software de aplicación."},
+    {t:"Interfaz de usuario", k:"sw", why:"Lo que ve y usa la persona es software de aplicación."},
+    {t:"Conexión a la nube", k:"sw", why:"Enviar datos a internet es parte del software de aplicación."}
+  ];
+  const LAYER_NAME = {hw:"Hardware", fw:"Firmware", sw:"Software de aplicación"};
+
+  const STEPS = [
+    {t:"Identificación y propósito", d:"Definir el problema y alinear la necesidad."},
+    {t:"Análisis de requisitos", d:"Funcionales (qué hace) y no funcionales (energía, costo)."},
+    {t:"Diseño y arquitectura", d:"Subsistemas, flujo de datos, RTOS vs bare-metal."},
+    {t:"Selección de componentes", d:"Elegir MCU y sensores; sale la BOM preliminar."},
+    {t:"Desarrollo de FW/SW", d:"Implementar drivers y lógica."},
+    {t:"Construcción del prototipo", d:"Ensamblar el hardware y cargar el firmware."},
+    {t:"Integración HW/SW", d:"Conectar subsistemas y validar que funcionen juntos."},
+    {t:"Pruebas y depuración", d:"Ejecutar pruebas y detectar defectos."},
+    {t:"Evaluación y ajustes", d:"Refinar el diseño y optimizar el código."},
+    {t:"Documentación y transición", d:"Esquemáticos y BOM: paquete para preproducción."}
+  ];
+
+  const QUIZ = [
+    {tag:"Interfaces", q:"Quieres ver en la PC los mensajes de depuración que imprime tu microcontrolador. ¿Qué interfaz usas?",
+     o:["UART","CAN","SPI","I²C"], a:0, why:"UART es serial asíncrona y es la opción típica para consolas de depuración, GPS y Bluetooth."},
+    {tag:"Interfaces", q:"Necesitas leer 6 sensores de temperatura lentos usando solo dos cables. ¿Qué bus eliges?",
+     o:["SPI","I²C","UART","Wi-Fi"], a:1, why:"I²C usa dos hilos y permite conectar muchos periféricos de baja velocidad en el mismo bus."},
+    {tag:"Interfaces", q:"Vas a comunicar módulos dentro de un auto, con mucho ruido eléctrico. ¿Qué interfaz es la adecuada?",
+     o:["I²C","UART","CAN","SPI"], a:2, why:"CAN es un bus muy robusto frente al ruido; es el estándar en industria y automoción."},
+    {tag:"Tipos de prototipo", q:"Aún no tienes la placa, pero quieres probar la lógica de tu código en Wokwi o QEMU. ¿Qué tipo de prototipo es?",
+     o:["Alta fidelidad","Físico (breadboard)","Virtual / simulado","Baja fidelidad"], a:2, why:"Un prototipo virtual corre sin hardware físico y permite iterar la lógica muy rápido."},
+    {tag:"Tipos de prototipo", q:"Tienes una PCB hecha a la medida y el firmware casi definitivo, listo para certificación. ¿En qué nivel estás?",
+     o:["Hardware-software integrado","Alta fidelidad","Físico (breadboard)","Virtual / simulado"], a:1, why:"Alta fidelidad = PCB custom y firmware casi final. Sirve para certificar, pero cuesta caro modificarlo."},
+    {tag:"Herramientas", q:"Tu programa se traba y quieres poner breakpoints y revisar los registros del micro por JTAG/SWD. ¿Qué usas?",
+     o:["Osciloscopio","Git","ST-Link / J-Link","PlatformIO"], a:2, why:"ST-Link, J-Link y OpenOCD son depuradores: inspeccionan registros, memoria y breakpoints."},
+    {tag:"Ventajas y límites", q:"¿Cuál es la principal limitación de un prototipo virtual?",
+     o:["Es muy caro de modificar","No captura efectos físicos como ruido o temperatura","Necesita una PCB propia","Es frágil y se desconecta fácil"], a:1, why:"Los modelos de periféricos son imperfectos: un simulador no ve ruido eléctrico ni temperatura real."},
+    {tag:"Propósito", q:"Descubres que tu dispositivo gasta demasiada batería antes de mandar a fabricar la PCB final. ¿Qué propósito del prototipado se cumplió?",
+     o:["Herramienta de comunicación","Detección temprana","Documentación y transición","Selección de componentes"], a:1, why:"Detección temprana: encontrar problemas de consumo, memoria o tiempos antes de que salgan caros."}
+  ];
+
+  const state = {name:"", ok:0, bad:0, r:[{ok:0,bad:0},{ok:0,bad:0},{ok:0,bad:0}], round:0};
+
+  function hit(round, good){
+    if (good){ state.ok++; state.r[round].ok++; } else { state.bad++; state.r[round].bad++; }
+    $("#cOk").textContent = state.ok; $("#cBad").textContent = state.bad;
+  }
+  function feedback(el, kind, html){
+    el.className = "feedback " + kind;
+    el.innerHTML = '<span class="tag">' + ({ok:"BIEN",bad:"REVISA",info:"INFO"})[kind] + '</span><span>' + html + '</span>';
+  }
+  function shakeEl(el, cls){
+    el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+    if (cls){ el.classList.add(cls); setTimeout(()=>el.classList.remove(cls), 450); }
+  }
+  function show(id, phase){
+    ["#sIntro","#sR1","#sR2","#sR3","#sEnd"].forEach(s => $(s).hidden = (s !== id));
+    document.querySelectorAll(".phase").forEach(p => {
+      const n = +p.dataset.p;
+      p.classList.toggle("active", n === phase);
+      p.classList.toggle("done", n < phase || phase === 4);
+    });
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  /* ---------- Ronda 1 ---------- */
+  let selected = null, left1 = 0;
+  function initR1(){
+    const tray = $("#tray"); tray.innerHTML = "";
+    document.querySelectorAll(".layer .slot").forEach(s => s.innerHTML = "");
+    left1 = PIECES.length; $("#next1").disabled = true; selected = null;
+    feedback($("#fb1"), "info", 'Quedan <b>' + left1 + '</b> piezas por colocar.');
+    shuffle(PIECES).forEach((p, i) => {
+      const c = document.createElement("button");
+      c.className = "chip"; c.type = "button"; c.textContent = p.t; c.draggable = true;
+      c.dataset.k = p.k; c.dataset.why = p.why; c.id = "chip" + i;
+      c.addEventListener("click", () => {
+        if (selected === c){ c.classList.remove("selected"); selected = null; armLayers(false); return; }
+        if (selected) selected.classList.remove("selected");
+        selected = c; c.classList.add("selected"); armLayers(true);
+      });
+      c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", c.id); c.classList.add("dragging"); });
+      c.addEventListener("dragend", () => c.classList.remove("dragging"));
+      tray.appendChild(c);
+    });
+  }
+  function armLayers(on){ document.querySelectorAll(".layer").forEach(l => l.classList.toggle("armed", on)); }
+  function drop(chip, layer){
+    const k = layer.dataset.k;
+    if (chip.dataset.k === k){
+      hit(0, true);
+      const tag = document.createElement("span"); tag.className = "placed"; tag.textContent = chip.textContent;
+      layer.querySelector(".slot").appendChild(tag);
+      chip.remove(); left1--;
+      shakeEl(layer, "flash-ok"); layer.classList.remove("shake");
+      feedback($("#fb1"), "ok", chip.dataset.why + (left1 ? ' Quedan <b>' + left1 + '</b>.' : ' <b>¡Capas completas!</b>'));
+      if (!left1) $("#next1").disabled = false;
+    } else {
+      hit(0, false);
+      shakeEl(layer, "flash-bad");
+      feedback($("#fb1"), "bad", '“' + chip.textContent + '” no va en ' + LAYER_NAME[k] + '. Pista: piensa si se puede tocar (hardware), si configura el chip (firmware) o si es la lógica del producto (aplicación).');
+    }
+    if (selected){ selected.classList.remove("selected"); selected = null; }
+    armLayers(false);
+  }
+  document.querySelectorAll(".layer").forEach(l => {
+    l.addEventListener("click", () => { if (selected) drop(selected, l); });
+    l.addEventListener("dragover", e => { e.preventDefault(); l.classList.add("over"); });
+    l.addEventListener("dragleave", () => l.classList.remove("over"));
+    l.addEventListener("drop", e => { e.preventDefault(); l.classList.remove("over"); const c = document.getElementById(e.dataTransfer.getData("text/plain")); if (c) drop(c, l); });
+  });
+
+  /* ---------- Ronda 2 ---------- */
+  let nextStep = 0;
+  function initR2(){
+    nextStep = 0; $("#next2").disabled = true;
+    const track = $("#track"); track.innerHTML = "";
+    STEPS.forEach((s, i) => {
+      const d = document.createElement("div"); d.className = "slot2" + (i === 0 ? " next" : "") + (i === 7 || i === 8 ? " loop" : "");
+      d.innerHTML = '<span class="num">FASE ' + String(i + 1).padStart(2, "0") + (i === 7 || i === 8 ? ' · ciclo' : '') + '</span>';
+      track.appendChild(d);
+    });
+    const pile = $("#pile"); pile.innerHTML = "";
+    shuffle(STEPS.map((s, i) => ({...s, i}))).forEach(s => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "step";
+      b.innerHTML = '<b>' + s.t + '</b><span>' + s.d + '</span>';
+      b.addEventListener("click", () => pickStep(b, s));
+      pile.appendChild(b);
+    });
+    feedback($("#fb2"), "info", "¿Cuál es la fase 1?");
+  }
+  function pickStep(btn, s){
+    const slots = document.querySelectorAll(".slot2");
+    if (s.i === nextStep){
+      hit(1, true);
+      const sl = slots[nextStep];
+      sl.classList.remove("next"); sl.classList.add("filled");
+      sl.innerHTML += '<b>' + s.t + '</b><span>' + s.d + '</span>';
+      btn.classList.add("gone"); btn.disabled = true;
+      nextStep++;
+      if (nextStep < STEPS.length){
+        slots[nextStep].classList.add("next");
+        feedback($("#fb2"), "ok", 'Fase ' + nextStep + ': ' + s.t + '. ¿Qué sigue en la fase ' + (nextStep + 1) + '?');
+      } else {
+        feedback($("#fb2"), "ok", '<b>¡Proceso completo!</b> Recuerda que el prototipado es un ciclo: probar, evaluar y ajustar hasta que esté listo para producción.');
+        $("#next2").disabled = false;
+      }
+    } else {
+      hit(1, false);
+      shakeEl(btn, "flash-bad");
+      const pos = s.i + 1;
+      feedback($("#fb2"), "bad", '“' + s.t + '” no es la fase ' + (nextStep + 1) + '. ' + (pos > nextStep + 1 ? 'Va más adelante: falta algo antes.' : 'Esa ya debería estar puesta.'));
+    }
+  }
+
+  /* ---------- Ronda 3 ---------- */
+  let qi = 0, qList = [];
+  function initR3(){ qi = 0; qList = QUIZ.slice(); renderQ(); }
+  function renderQ(){
+    const q = qList[qi];
+    $("#qTag").textContent = q.tag;
+    $("#qCount").textContent = (qi + 1) + " / " + qList.length;
+    $("#qBar").style.width = (qi / qList.length * 100) + "%";
+    $("#qText").textContent = q.q;
+    $("#next3").disabled = true;
+    $("#next3").textContent = qi === qList.length - 1 ? "Ver resultados" : "Siguiente";
+    feedback($("#fb3"), "info", "Elige una opción.");
+    const box = $("#qOpts"); box.innerHTML = "";
+    const order = shuffle(q.o.map((t, i) => ({t, i})));
+    order.forEach((o, n) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt";
+      b.innerHTML = '<span class="key">' + "ABCD"[n] + '</span><span>' + o.t + '</span>';
+      b.addEventListener("click", () => answer(b, o.i === q.a, q));
+      box.appendChild(b);
+    });
+  }
+  function answer(btn, good, q){
+    if (good){
+      hit(2, true);
+      btn.classList.add("right");
+      document.querySelectorAll(".opt").forEach(b => b.disabled = true);
+      feedback($("#fb3"), "ok", q.why);
+      $("#next3").disabled = false;
+      $("#qBar").style.width = ((qi + 1) / qList.length * 100) + "%";
+    } else {
+      hit(2, false);
+      btn.classList.add("wrong"); btn.disabled = true; shakeEl(btn);
+      feedback($("#fb3"), "bad", "No es esa. Inténtalo otra vez.");
+    }
+  }
+  $("#next3").addEventListener("click", () => {
+    if (qi < qList.length - 1){ qi++; renderQ(); } else finish();
+  });
+
+  /* ---------- Final ---------- */
+  function finish(){
+    show("#sEnd", 4);
+    const total = state.ok + state.bad;
+    const pct = total ? Math.round(state.ok / total * 100) : 0;
+    $("#gVal").textContent = pct + "%";
+    const arc = $("#gArc");
+    arc.style.stroke = pct >= 80 ? "var(--ok)" : pct >= 60 ? "var(--fw)" : "var(--hw)";
+    requestAnimationFrame(() => arc.style.strokeDashoffset = (263.9 * (1 - pct / 100)).toFixed(1));
+    const v = pct >= 90 ? ["Listo para producción", "Dominaste las capas, el proceso y las decisiones del banco de pruebas."]
+            : pct >= 75 ? ["Prototipo de alta fidelidad", "Muy bien. Unos pocos ajustes y queda listo para certificar."]
+            : pct >= 55 ? ["Prototipo en breadboard", "Funciona, pero todavía hay que iterar. Repasa las fases y las interfaces."]
+            :             ["Prototipo de baja fidelidad", "La idea está, falta construirla. Vuelve a intentarlo para mejorar tu precisión."];
+    $("#verdict").textContent = v[0]; $("#verdictText").textContent = v[1];
+    const fmt = r => r.ok + " ✓ · " + r.bad + " ✗";
+    $("#b1").textContent = fmt(state.r[0]); $("#b2").textContent = fmt(state.r[1]); $("#b3").textContent = fmt(state.r[2]);
+    const now = new Date();
+    $("#stamp").textContent = "Operador: " + (state.name || "sin nombre") + " · " + now.toLocaleDateString("es-MX") + " " + now.toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) + " · " + state.ok + " aciertos / " + state.bad + " fallos";
+  }
+
+  function reset(){
+    state.ok = 0; state.bad = 0; state.r = [{ok:0,bad:0},{ok:0,bad:0},{ok:0,bad:0}];
+    $("#cOk").textContent = 0; $("#cBad").textContent = 0;
+    $("#gArc").style.strokeDashoffset = 263.9;
+  }
+
+  $("#startBtn").addEventListener("click", () => {
+    state.name = $("#nameInput").value.trim();
+    $("#opName").textContent = state.name || "—";
+    reset(); initR1(); show("#sR1", 1);
+  });
+  $("#nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("#startBtn").click(); });
+  $("#next1").addEventListener("click", () => { initR2(); show("#sR2", 2); });
+  $("#next2").addEventListener("click", () => { initR3(); show("#sR3", 3); });
+  $("#restart").addEventListener("click", () => { show("#sIntro", 0); });
+})();
+</script>
+</body>
+</html>
